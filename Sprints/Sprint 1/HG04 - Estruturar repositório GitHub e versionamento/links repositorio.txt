@@ -1,0 +1,5 @@
+https://github.com/marcos-solaresworks/pa-frontend.git
+https://github.com/marcos-solaresworks/pa-lambda-servico01.git
+https://github.com/marcos-solaresworks/pa-api.git
+https://github.com/marcos-solaresworks/pa-worker.git
+https://github.com/marcos-solaresworks/pa-infra.git

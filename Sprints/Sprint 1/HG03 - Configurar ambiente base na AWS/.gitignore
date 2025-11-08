@@ -1,0 +1,51 @@
+# ==========================================
+# TERRAFORM .GITIGNORE
+# HG03 - Configurar Ambiente Base na AWS
+# ==========================================
+
+# Terraform files
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+.terraform/
+.terraform.lock.hcl
+terraform.rc
+.terraformrc
+
+# Crash log files
+crash.log
+crash.*.log
+
+# SSH Keys (CRÍTICO - NUNCA VERSIONAR)
+keys/
+*.pem
+*.key
+*.pub
+
+# Sensitive files
+.env
+.env.local
+.env.production
+secrets.json
+
+# OS files
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+*~
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-*
+
+# Backup files
+*.backup
+*.bak
+
+# AWS CLI
+.aws/credentials
+.aws/config
