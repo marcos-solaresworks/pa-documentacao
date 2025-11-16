@@ -1,0 +1,37 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+LAYOUT_TOP_DOWN()
+
+Container_Boundary(api, "API .NET 8 (Container)") {
+  Component(ctrl, "UploadController", "ASP.NET", "Recebe upload e inicia pipeline.")
+  Component(auth, "Auth/OIDC Middleware", "ASP.NET", "Valida identidade/perfis.")
+  Component(val, "ValidationService", "C#", "Valida formato e regras de negócio.")
+  Component(map, "TemplateResolver", "C#", "Resolve layout/parametrizações por cliente.")
+  Component(store, "S3Client", "C#", "Upload/Leitura de objetos no S3.")
+  Component(pub, "QueuePublisher", "C#", "Publica mensagens no RabbitMQ.")
+  Component(repo, "MetadataRepository", "C#", "Persistência em PostgreSQL.")
+  Component(obs, "Observability", "Lib/SDK", "Logging/metrics/tracing.")
+}
+
+Container_Ext(front, "Frontend (Vercel)", "Next.js")
+Container(rmq, "RabbitMQ", "Broker")
+ContainerDb(rds, "RDS PostgreSQL", "Relacional")
+Container(s3, "Amazon S3", "Object Store")
+System_Ext(idp, "Provedor de Identidade", "OIDC/SAML")
+System_Ext(cw, "CloudWatch", "Logs/Metrics")
+
+Rel(front, ctrl, "HTTPs")
+Rel_D(idp, auth, "Tokens/Claims")
+Rel(ctrl, auth, "Enforce RBAC")
+Rel(ctrl, val, "Validação")
+Rel(val, map, "Template por cliente")
+Rel(ctrl, store, "Upload entrada")
+Rel(ctrl, pub, "Mensagem de processamento")
+Rel(ctrl, repo, "Criar/atualizar metadados")
+Rel(repo, rds, "SQL")
+Rel(pub, rmq, "AMQP")
+Rel(store, s3, "S3 API")
+Rel(ctrl, obs, "Logs/metrics")
+Rel(obs, cw, "Envio de logs/metrics")
+
+@enduml

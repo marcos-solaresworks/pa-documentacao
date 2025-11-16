@@ -1,0 +1,70 @@
+@startuml
+title C4 - Nível 3 (Componentes) - Worker & Lambda (Gráfica Ltda)
+skinparam dpi 150
+skinparam shadowing false
+skinparam linetype ortho
+skinparam defaultTextAlignment center
+skinparam ArrowColor #4B5563
+
+!define C_WRK_BG #F7FEE7
+!define C_WRK_BR #65A30D
+!define C_LBD_BG #EEF2FF
+!define C_LBD_BR #6366F1
+!define C_DATA_BG #FFF0F6
+!define C_DATA_BR #D946EF
+
+' Container Worker
+rectangle "Container: Worker" as WRK #C_WRK_BG;lineColor=C_WRK_BR {
+  rectangle "Consumer\n(RabbitMQ)" as CONS
+  rectangle "Orquestrador\n(Workflow/Retry/DLQ)" as ORQ
+  rectangle "Invocador Lambda\n(AWS SDK)" as INV
+  rectangle "Atualizador de Status\n(PostgreSQL)" as UPT
+  rectangle "Observabilidade\n(Logging/Tracing)" as WOBS
+}
+
+' Função Lambda (lógica de processamento)
+rectangle "AWS Lambda: ProcessarPCL" as LBD #C_LBD_BG;lineColor=C_LBD_BR {
+  rectangle "Parser\n(CSV/XML/TXT)" as PARS
+  rectangle "Transformação/Validação\n(Regras de negócio)" as TRF
+  rectangle "Gerador PCL\n(Layout customizado)" as GPCL
+  rectangle "Writer S3\n(Saída PCL)" as WRT
+  rectangle "L-Observabilidade\n(Logs/Métricas)" as LOBS
+}
+
+' Recursos externos
+rectangle "RabbitMQ" as RMQ
+database "RDS PostgreSQL" as RDS #C_DATA_BG;lineColor=C_DATA_BR
+rectangle "Amazon S3" as S3 #C_DATA_BG;lineColor=C_DATA_BR
+
+' Fluxos Worker
+CONS --> ORQ : Mensagem consumida
+ORQ --> INV : Solicita processamento
+INV --> LBD : Invoke
+ORQ --> WOBS : Logs/Tracing
+UPT --> RDS : Atualiza status/lotes
+
+' Fluxos Lambda
+LBD --> PARS : Entrada (S3/key)
+PARS --> TRF
+TRF --> GPCL
+GPCL --> WRT : escreve PCL
+WRT --> S3
+LBD --> LOBS : Logs/Métricas
+
+' Integrações externas
+WRK --> RDS
+WRK --> RMQ
+LBD --> S3
+
+' Anotações
+note right of ORQ
+- Reprocesso com backoff
+- Envio a DLQ em falha
+end note
+
+note bottom of GPCL
+Geração PCL específica
+por cliente (template)
+end note
+
+@enduml

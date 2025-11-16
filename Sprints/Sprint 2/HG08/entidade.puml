@@ -1,0 +1,90 @@
+@startuml entidade
+!theme plain
+
+entity "usuarios" {
+  * id : serial <<PK>>
+  --
+  nome : varchar(100)
+  email : varchar(150)
+  senha_hash : varchar(200)
+  perfil : varchar(50)
+  ultimo_login : timestamp
+  data_criacao : timestamp
+}
+
+entity "clientes" {
+  * id : serial <<PK>>
+  --
+  nome : varchar(150)
+  email : varchar(150)
+  telefone : varchar(20)
+  empresa : varchar(150)
+  ativo : boolean
+  data_criacao : timestamp
+}
+
+entity "perfis_processamento" {
+  * id : serial <<PK>>
+  --
+  cliente_id : integer <<FK>>
+  nome : varchar(100)
+  descricao : text
+  tipo_arquivo : varchar(20)
+  delimitador : varchar(5)
+  template_pcl : varchar(200)
+  data_criacao : timestamp
+}
+
+entity "lotes_processamento" {
+  * id : serial <<PK>>
+  --
+  cliente_id : integer <<FK>>
+  usuario_id : integer <<FK>>
+  perfil_processamento_id : integer <<FK>>
+  nome_arquivo : varchar(200)
+  caminho_s3 : varchar(300)
+  status : varchar(50)
+  data_criacao : timestamp
+  data_processamento : timestamp
+}
+
+entity "lote_registros" {
+  * id : serial <<PK>>
+  --
+  lote_id : integer <<FK>>
+  nome : varchar(200)
+  endereco : varchar(300)
+  bairro : varchar(100)
+  cidade : varchar(100)
+  uf : varchar(2)
+  cep : varchar(20)
+}
+
+entity "processamento_logs" {
+  * id : serial <<PK>>
+  --
+  lote_id : integer <<FK>>
+  mensagem : text
+  tipo : varchar(20)
+  data_criacao : timestamp
+}
+
+entity "credenciais_api_clientes" {
+  * id : serial <<PK>>
+  --
+  cliente_id : integer <<FK>>
+  api_key : varchar(200)
+  secret_key : varchar(200)
+  ativo : boolean
+  data_criacao : timestamp
+}
+
+usuarios ||--o{ lotes_processamento : inicia >
+clientes ||--o{ lotes_processamento : pertence >
+clientes ||--o{ perfis_processamento : possui >
+perfis_processamento ||--o{ lotes_processamento : usa >
+lotes_processamento ||--o{ lote_registros : contém >
+lotes_processamento ||--o{ processamento_logs : gera >
+clientes ||--o{ credenciais_api_clientes : possui >
+
+@enduml

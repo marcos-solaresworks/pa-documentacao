@@ -1,0 +1,107 @@
+@startuml C4_Container_GraficaLtda
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+LAYOUT_WITH_LEGEND()
+LAYOUT_TOP_DOWN()
+
+title "C4 Container - Plataforma de Processamento PCL - Gráfica Ltda"
+
+' Personas com cores personalizadas
+Person(ana, "Ana Ribeiro", "Operadora de Produção", "Faz upload de arquivos, monitora status dos jobs e gerencia filas de trabalho")
+Person(carlos, "Carlos Mendes", "Operador de Impressão", "Baixa arquivos PCL, opera impressoras e reporta problemas")  
+Person(marcos, "Marcos Oliveira", "Gestor de Produção", "Visualiza dashboards, monitora KPIs e toma decisões operacionais")
+
+System_Boundary(sys, "Plataforma de Processamento - Gráfica Ltda") {
+  
+  ' Frontend Layer
+  Container(front, "Frontend Portal", "Next.js + TypeScript", "Interface web responsiva, upload de arquivos, dashboards interativos e monitoramento em tempo real")
+  
+  ' Container orchestration boundary
+  Container_Boundary(ec2, "AWS EC2 - Docker Host") {
+    Container(api, "API Gateway", ".NET 8 + ASP.NET Core", "Recepção de arquivos, validação e autenticação, publicação em filas e rate limiting")
+    Container(worker, "Worker Engine", "Background Service", "Orquestra processamento, gerencia timeouts, invoca Lambdas e retry logic")
+    Container(rmq, "Message Broker", "RabbitMQ", "Filas de processamento, Dead Letter Queue (DLQ), message persistence e clustering")
+    Container(portainer, "Container Manager", "Portainer CE", "Gestão de containers, monitoramento recursos, logs centralizados e deploy management")
+  }
+  
+  ' Data Layer
+  ContainerDb(rds, "Database", "AWS RDS PostgreSQL", "Metadados de arquivos, status de processamento, templates PCL e auditoria")
+  
+  ' Storage Layer  
+  Container(s3, "Object Storage", "Amazon S3", "Arquivos de entrada, PCLs processados, versionamento e lifecycle policies")
+  
+  ' Serverless Processing
+  Container(lambda, "Serverless Functions", "AWS Lambda", "Transformação de dados, geração de PCL, processamento paralelo e auto-scaling")
+}
+
+' Sistemas Externos
+System_Ext(origem, "Sistema Cliente", "ERP/Legacy Systems", "Arquivos CSV/XML/TXT, APIs de integração e batch uploads")
+System_Ext(spool, "Infraestrutura de Impressão", "Cliente On-Premise", "Spool de impressão, impressoras industriais e consumo de PCL")
+System_Ext(notif, "Sistema de Notificações", "SNS + E-mail/Webhook", "Alertas de status, notificações de erro e monitoramento SLA")
+System_Ext(idp, "Identity Provider", "AWS Cognito/Auth0", "Autenticação OIDC, autorização RBAC e SSO corporativo")
+System_Ext(cw, "Observabilidade", "AWS CloudWatch", "Logs centralizados, métricas de performance e alertas operacionais")
+
+' === RELACIONAMENTOS ===
+
+' Usuários -> Frontend
+Rel(ana, front, "Usa portal web", "HTTPS")
+Rel(carlos, front, "Acessa dashboard", "HTTPS")
+Rel(marcos, front, "Monitora KPIs", "HTTPS")
+
+' Frontend -> Backend
+Rel(front, api, "Chamadas API", "HTTPS/REST")
+Rel(front, idp, "Autenticação", "OIDC/SAML")
+
+' API -> Componentes internos
+Rel(api, rmq, "Publica jobs", "AMQP")
+Rel(api, s3, "Upload arquivos", "AWS SDK")
+Rel(api, rds, "Persiste metadados", "PostgreSQL")
+Rel(api, notif, "Envia alertas", "AWS SNS")
+
+' Worker -> Processamento
+Rel(worker, rmq, "Consome filas", "AMQP")
+Rel(worker, lambda, "Invoca funções", "AWS SDK")
+Rel(worker, rds, "Atualiza status", "PostgreSQL")
+Rel(worker, s3, "Lê/Escreve arquivos", "AWS SDK")
+
+' Lambda -> Storage
+Rel(lambda, s3, "Processa & grava PCL", "AWS SDK")
+Rel(lambda, rds, "Log processamento", "PostgreSQL")
+
+' Sistemas externos
+Rel(origem, front, "Upload via portal", "HTTPS")
+Rel(origem, api, "API direta", "HTTPS/REST")
+Rel(spool, s3, "Download PCL", "HTTPS")
+
+' Observabilidade
+Rel(api, cw, "Logs & métricas", "CloudWatch Agent")
+Rel(worker, cw, "Logs & métricas", "CloudWatch Agent")
+Rel(lambda, cw, "Logs & métricas", "Built-in")
+
+SHOW_LEGEND()
+
+' === NOTAS ARQUITETURAIS ===
+
+note as N1
+  FLUXO PRINCIPAL
+  ===============
+  1. Upload via portal/API
+  2. Validação e enfileiramento  
+  3. Processamento assíncrono
+  4. Geração de PCL
+  5. Disponibilização para download
+end note
+
+note as N2
+  CARACTERÍSTICAS
+  ===============
+  - Escalabilidade: Auto-scaling via Lambda
+  - Resiliência: DLQ + retry logic  
+  - Observabilidade: Logs + métricas
+  - Segurança: IAM + HTTPS + Auth
+end note
+
+N1 .. sys
+N2 .. lambda
+
+@enduml
